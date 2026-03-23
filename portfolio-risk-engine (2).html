@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yujin Kim — Portfolio Risk Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#0a0a0b;--surface:#111113;--surface2:#18181b;--border:#27272a;
+--text:#e4e4e7;--text-dim:#71717a;--text-muted:#52525b;
+--green:#22c55e;--green-dim:#16a34a;--green-bg:rgba(34,197,94,0.08);
+--red:#ef4444;--red-bg:rgba(239,68,68,0.08);
+--amber:#f59e0b;--amber-bg:rgba(245,158,11,0.08);
+--blue:#3b82f6;--blue-bg:rgba(59,130,246,0.08);
+--cyan:#06b6d4;
+--font-mono:'IBM Plex Mono',monospace;
+--font-display:'Cormorant Garamond',serif;
+}
+html{font-size:14px}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh;overflow-x:hidden}
+::selection{background:var(--green);color:var(--bg)}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+.header{padding:24px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;background:var(--bg);backdrop-filter:blur(20px)}
+.logo{display:flex;align-items:baseline;gap:12px}
+.logo h1{font-family:var(--font-display);font-size:1.8rem;font-weight:700;letter-spacing:0.02em;color:var(--green)}
+.logo .ver{font-size:0.7rem;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase}
+.header-status{display:flex;align-items:center;gap:16px;font-size:0.75rem;color:var(--text-dim)}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+.portfolio-section{padding:24px 32px;border-bottom:1px solid var(--border)}
+.section-label{font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px}
+.portfolio-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.stock-chip{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:8px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all 0.2s;font-family:var(--font-mono);font-size:0.8rem}
+.stock-chip:hover{border-color:var(--green);background:var(--green-bg)}
+.stock-chip.active{border-color:var(--green);background:var(--green-bg);color:var(--green)}
+.stock-chip .ticker{font-weight:600}
+.stock-chip .weight{color:var(--text-dim);font-size:0.7rem}
+.stock-chip .remove{color:var(--text-muted);margin-left:4px;cursor:pointer;font-size:0.9rem}
+.stock-chip .remove:hover{color:var(--red)}
+
+.controls-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.ctrl-group{display:flex;align-items:center;gap:6px}
+.ctrl-group label{font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em}
+.ctrl-input{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;width:100px;outline:none;transition:border 0.2s}
+.ctrl-input:focus{border-color:var(--green)}
+select.ctrl-input{cursor:pointer;-webkit-appearance:none;appearance:none;padding-right:24px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2371717a'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.btn-run{background:var(--green);color:var(--bg);border:none;padding:8px 20px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;font-weight:600;cursor:pointer;letter-spacing:0.05em;transition:all 0.2s;text-transform:uppercase}
+.btn-run:hover{background:#4ade80;transform:translateY(-1px)}
+.btn-run:active{transform:translateY(0)}
+.btn-secondary{background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:8px 16px;border-radius:3px;font-family:var(--font-mono);font-size:0.75rem;cursor:pointer;transition:all 0.2s}
+.btn-secondary:hover{border-color:var(--text-dim);color:var(--text)}
+
+.presets{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.preset-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:5px 12px;border-radius:3px;font-family:var(--font-mono);font-size:0.7rem;cursor:pointer;transition:all 0.2s;letter-spacing:0.05em}
+.preset-btn:hover{border-color:var(--green);color:var(--green)}
+
+.dashboard{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);margin:0}
+.panel{background:var(--bg);padding:24px 28px;min-height:320px;position:relative;overflow:hidden}
+.panel-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px}
+.panel-title{font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted)}
+.panel-value{font-size:0.8rem;font-weight:500}
+
+.var-cards{display:flex;flex-direction:column;gap:12px}
+.var-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:16px;position:relative;overflow:hidden}
+.var-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.var-card.historical::before{background:var(--green)}
+.var-card.parametric::before{background:var(--blue)}
+.var-card.montecarlo::before{background:var(--cyan)}
+.var-card.cvar-card::before{background:var(--amber)}
+.var-method{font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
+.var-number{font-size:1.8rem;font-weight:700;font-family:var(--font-display)}
+.var-sub{font-size:0.75rem;color:var(--text-dim);margin-top:4px}
+
+canvas{width:100%!important;height:auto!important}
+.chart-container{position:relative;width:100%;height:220px}
+
+.corr-matrix{display:grid;gap:2px;margin-top:8px}
+.corr-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:500;border-radius:2px;position:relative;cursor:default;transition:transform 0.15s}
+.corr-cell:hover{transform:scale(1.1);z-index:2}
+.corr-label{font-size:0.65rem;color:var(--text-dim);display:flex;align-items:center;justify-content:center;font-weight:600}
+
+.stress-table{width:100%;border-collapse:collapse;margin-top:8px}
+.stress-table th{font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);text-align:left;padding:8px 6px;border-bottom:1px solid var(--border);font-weight:500}
+.stress-table td{padding:8px 6px;font-size:0.8rem;border-bottom:1px solid var(--surface2)}
+.stress-table tr:hover td{background:var(--surface)}
+.impact-bar{height:6px;border-radius:3px;display:inline-block;vertical-align:middle;margin-left:6px}
+
+.ai-section{border-top:1px solid var(--border);padding:24px 32px}
+.ai-badge{display:inline-flex;align-items:center;gap:6px;background:var(--green-bg);border:1px solid rgba(34,197,94,0.2);padding:4px 10px;border-radius:3px;font-size:0.65rem;color:var(--green);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px}
+.ai-text{font-size:0.85rem;line-height:1.8;color:var(--text-dim);max-width:900px}
+.ai-text strong{color:var(--text);font-weight:500}
+.ai-text .highlight-red{color:var(--red)}
+.ai-text .highlight-green{color:var(--green)}
+.ai-text .highlight-amber{color:var(--amber)}
+
+.loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;transition:opacity 0.5s}
+.loading-overlay.hidden{opacity:0;pointer-events:none}
+.loading-text{font-size:0.75rem;color:var(--text-dim);letter-spacing:0.2em;text-transform:uppercase;margin-top:20px}
+.loading-bar{width:200px;height:2px;background:var(--surface2);margin-top:12px;border-radius:1px;overflow:hidden}
+.loading-bar-fill{height:100%;background:var(--green);width:0%;transition:width 0.3s;border-radius:1px}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn 0.4s ease forwards;opacity:0}
+
+@media(max-width:900px){
+.dashboard{grid-template-columns:1fr}
+.header{padding:16px 20px;flex-direction:column;gap:8px;align-items:flex-start}
+.portfolio-section{padding:16px 20px}
+.panel{padding:20px}
+.ai-section{padding:16px 20px}
+.controls-row{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div style="font-family:var(--font-display);font-size:2.4rem;color:var(--green)">RISK ENGINE</div>
+  <div class="loading-text" id="loading-msg">Initializing risk models...</div>
+  <div class="loading-bar"><div class="loading-bar-fill" id="loading-fill"></div></div>
+</div>
+
+<header class="header">
+  <div class="logo">
+    <a href="https://yujinkim.me" style="text-decoration:none;color:var(--text-dim);font-size:0.75rem;margin-right:12px;border:1px solid var(--border);padding:4px 10px;border-radius:3px;transition:all 0.2s" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">← yujinkim.me</a>
+    <h1>RISK ENGINE</h1>
+    <span class="ver">v1.0 — Yujin Kim · Portfolio Risk Analytics</span>
+  </div>
+  <div class="header-status">
+    <span id="header-sims">Monte Carlo: 10,000 paths</span>
+    <span>|</span>
+    <span id="header-conf">Confidence: 95%</span>
+    <span><span class="status-dot"></span></span>
+  </div>
+</header>
+
+<section class="portfolio-section">
+  <div class="section-label">Preset Portfolios</div>
+  <div class="presets">
+    <button class="preset-btn" onclick="loadPreset('tech')">⚡ Tech Heavy</button>
+    <button class="preset-btn" onclick="loadPreset('balanced')">⚖️ Balanced</button>
+    <button class="preset-btn" onclick="loadPreset('conservative')">🛡️ Conservative</button>
+    <button class="preset-btn" onclick="loadPreset('crypto_mix')">₿ Crypto Mix</button>
+    <button class="preset-btn" onclick="loadPreset('blackrock')">◼ BlackRock Style</button>
+  </div>
+  
+  <div class="section-label">Portfolio Holdings</div>
+  <div class="portfolio-grid" id="portfolio-grid"></div>
+  
+  <div class="controls-row" style="margin-top:14px">
+    <div class="ctrl-group">
+      <label>Ticker</label>
+      <input type="text" class="ctrl-input" id="ticker-input" placeholder="e.g. TSLA" style="width:90px" onkeydown="if(event.key==='Enter')addTicker()">
+      <label>Wt%</label>
+      <input type="number" class="ctrl-input" id="weight-input" placeholder="%" style="width:60px" value="10" onkeydown="if(event.key==='Enter')addTicker()">
+      <button class="btn-secondary" onclick="addTicker()">+ Add</button>
+    </div>
+    <div style="flex:1"></div>
+    <div class="ctrl-group">
+      <label>Confidence</label>
+      <select class="ctrl-input" id="confidence-select" style="width:80px">
+        <option value="0.90">90%</option>
+        <option value="0.95" selected>95%</option>
+        <option value="0.99">99%</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Horizon</label>
+      <select class="ctrl-input" id="horizon-select" style="width:90px">
+        <option value="1">1 Day</option>
+        <option value="5">1 Week</option>
+        <option value="21" selected>1 Month</option>
+        <option value="63">3 Months</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Sims</label>
+      <select class="ctrl-input" id="sims-select" style="width:100px">
+        <option value="1000">1,000</option>
+        <option value="5000">5,000</option>
+        <option value="10000" selected>10,000</option>
+        <option value="50000">50,000</option>
+      </select>
+    </div>
+    <button class="btn-run" onclick="runAnalysis()">▶ Run Analysis</button>
+  </div>
+</section>
+
+<div class="dashboard" id="dashboard" style="display:none">
+  <div class="panel fade-in" style="animation-delay:0.1s">
+    <div class="panel-header">
+      <span class="panel-title">Value at Risk (VaR)</span>
+      <span class="panel-value" id="var-confidence">95% Confidence</span>
+    </div>
+    <div class="var-cards" id="var-cards"></div>
+  </div>
+
+  <div class="panel fade-in" style="animation-delay:0.2s">
+    <div class="panel-header">
+      <span class="panel-title">Monte Carlo Simulation</span>
+      <span class="panel-value" id="mc-paths">10,000 paths</span>
+    </div>
+    <div class="chart-container"><canvas id="mc-chart"></canvas></div>
+  </div>
+
+  <div class="panel fade-in" style="animation-delay:0.3s">
+    <div class="panel-header">
+      <span class="panel-title">Correlation Matrix</span>
+      <span class="panel-value">Pearson ρ</span>
+    </div>
+    <div id="corr-container"></div>
+  </div>
+
+  <div class="panel fade-in" style="animation-delay:0.4s">
+    <div class="panel-header">
+      <span class="panel-title">Stress Test Scenarios</span>
+      <span class="panel-value">Historical Events</span>
+    </div>
+    <div id="stress-container"></div>
+  </div>
+
+  <div class="panel fade-in" style="animation-delay:0.5s">
+    <div class="panel-header">
+      <span class="panel-title">Return Distribution</span>
+      <span class="panel-value" id="dist-stats"></span>
+    </div>
+    <div class="chart-container"><canvas id="dist-chart"></canvas></div>
+  </div>
+
+  <div class="panel fade-in" style="animation-delay:0.6s">
+    <div class="panel-header">
+      <span class="panel-title">Risk Contribution by Asset</span>
+      <span class="panel-value">% of Portfolio Variance</span>
+    </div>
+    <div class="chart-container"><canvas id="risk-decomp-chart"></canvas></div>
+  </div>
+</div>
+
+<section class="ai-section" id="ai-section" style="display:none">
+  <div class="ai-badge">◆ AI Risk Analyst</div>
+  <div class="ai-text" id="ai-text"></div>
+</section>
+
+<script>
+const STOCK_DATA = {
+  AAPL:{name:'Apple',sector:'Tech',mu:0.0008,sigma:0.018,beta:1.15},
+  MSFT:{name:'Microsoft',sector:'Tech',mu:0.0009,sigma:0.017,beta:1.10},
+  NVDA:{name:'NVIDIA',sector:'Tech',mu:0.0015,sigma:0.032,beta:1.65},
+  GOOGL:{name:'Alphabet',sector:'Tech',mu:0.0007,sigma:0.019,beta:1.12},
+  META:{name:'Meta',sector:'Tech',mu:0.0010,sigma:0.025,beta:1.30},
+  TSLA:{name:'Tesla',sector:'Tech',mu:0.0012,sigma:0.038,beta:1.80},
+  AMZN:{name:'Amazon',sector:'Tech',mu:0.0008,sigma:0.020,beta:1.20},
+  JPM:{name:'JPMorgan',sector:'Finance',mu:0.0006,sigma:0.016,beta:1.05},
+  GS:{name:'Goldman Sachs',sector:'Finance',mu:0.0007,sigma:0.019,beta:1.25},
+  BAC:{name:'Bank of America',sector:'Finance',mu:0.0004,sigma:0.018,beta:1.15},
+  BLK:{name:'BlackRock',sector:'Finance',mu:0.0007,sigma:0.017,beta:1.10},
+  JNJ:{name:'J&J',sector:'Healthcare',mu:0.0003,sigma:0.011,beta:0.65},
+  UNH:{name:'UnitedHealth',sector:'Healthcare',mu:0.0006,sigma:0.014,beta:0.80},
+  PFE:{name:'Pfizer',sector:'Healthcare',mu:0.0002,sigma:0.015,beta:0.70},
+  PG:{name:'P&G',sector:'Consumer',mu:0.0003,sigma:0.010,beta:0.55},
+  KO:{name:'Coca-Cola',sector:'Consumer',mu:0.0003,sigma:0.009,beta:0.50},
+  WMT:{name:'Walmart',sector:'Consumer',mu:0.0004,sigma:0.011,beta:0.55},
+  XOM:{name:'ExxonMobil',sector:'Energy',mu:0.0005,sigma:0.018,beta:0.90},
+  CVX:{name:'Chevron',sector:'Energy',mu:0.0005,sigma:0.017,beta:0.85},
+  SPY:{name:'S&P 500 ETF',sector:'Index',mu:0.0005,sigma:0.012,beta:1.00},
+  QQQ:{name:'Nasdaq 100 ETF',sector:'Index',mu:0.0007,sigma:0.016,beta:1.15},
+  TLT:{name:'20Y Treasury',sector:'Bond',mu:0.0001,sigma:0.012,beta:-0.15},
+  AGG:{name:'US Agg Bond',sector:'Bond',mu:0.0001,sigma:0.005,beta:-0.05},
+  GLD:{name:'Gold ETF',sector:'Commodity',mu:0.0003,sigma:0.011,beta:0.05},
+  BTC:{name:'Bitcoin',sector:'Crypto',mu:0.0020,sigma:0.045,beta:1.50},
+  ETH:{name:'Ethereum',sector:'Crypto',mu:0.0018,sigma:0.055,beta:1.80},
+};
+
+const SECTOR_CORR = {
+  'Tech-Tech':0.72,'Tech-Finance':0.55,'Tech-Healthcare':0.30,'Tech-Consumer':0.25,
+  'Tech-Energy':0.20,'Tech-Index':0.85,'Tech-Bond':-0.25,'Tech-Commodity':0.05,'Tech-Crypto':0.40,
+  'Finance-Finance':0.68,'Finance-Healthcare':0.35,'Finance-Consumer':0.30,
+  'Finance-Energy':0.40,'Finance-Index':0.75,'Finance-Bond':-0.20,'Finance-Commodity':0.10,'Finance-Crypto':0.30,
+  'Healthcare-Healthcare':0.55,'Healthcare-Consumer':0.40,
+  'Healthcare-Energy':0.20,'Healthcare-Index':0.60,'Healthcare-Bond':0.05,'Healthcare-Commodity':0.10,'Healthcare-Crypto':0.15,
+  'Consumer-Consumer':0.50,'Consumer-Energy':0.20,'Consumer-Index':0.55,'Consumer-Bond':0.10,'Consumer-Commodity':0.15,'Consumer-Crypto':0.10,
+  'Energy-Energy':0.65,'Energy-Index':0.50,'Energy-Bond':-0.10,'Energy-Commodity':0.35,'Energy-Crypto':0.15,
+  'Index-Index':0.90,'Index-Bond':-0.30,'Index-Commodity':0.10,'Index-Crypto':0.35,
+  'Bond-Bond':0.85,'Bond-Commodity':0.25,'Bond-Crypto':-0.15,
+  'Commodity-Commodity':1.0,'Commodity-Crypto':0.20,
+  'Crypto-Crypto':0.82
+};
+
+function getCorrelation(t1,t2){
+  if(t1===t2)return 1.0;
+  const s1=STOCK_DATA[t1].sector,s2=STOCK_DATA[t2].sector;
+  const key1=`${s1}-${s2}`,key2=`${s2}-${s1}`;
+  let base=SECTOR_CORR[key1]||SECTOR_CORR[key2]||0.3;
+  const seed=(t1+t2).split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  return Math.max(-0.95,Math.min(0.99,base+((seed%20)-10)/100));
+}
+
+const STRESS_SCENARIOS=[
+  {name:'2008 Financial Crisis',year:2008,impacts:{Tech:-0.45,Finance:-0.60,Healthcare:-0.25,Consumer:-0.20,Energy:-0.40,Index:-0.50,Bond:0.15,Commodity:-0.30,Crypto:0}},
+  {name:'2020 COVID Crash',year:2020,impacts:{Tech:-0.25,Finance:-0.35,Healthcare:-0.15,Consumer:-0.20,Energy:-0.55,Index:-0.34,Bond:0.08,Commodity:-0.10,Crypto:-0.40}},
+  {name:'2022 Rate Shock',year:2022,impacts:{Tech:-0.33,Finance:-0.15,Healthcare:-0.10,Consumer:-0.08,Energy:0.25,Index:-0.25,Bond:-0.25,Commodity:0.10,Crypto:-0.65}},
+  {name:'Dot-com Bust (2000)',year:2000,impacts:{Tech:-0.70,Finance:-0.20,Healthcare:-0.10,Consumer:-0.05,Energy:-0.10,Index:-0.40,Bond:0.12,Commodity:-0.05,Crypto:0}},
+  {name:'Flash Crash',year:2010,impacts:{Tech:-0.08,Finance:-0.10,Healthcare:-0.06,Consumer:-0.05,Energy:-0.07,Index:-0.09,Bond:0.03,Commodity:-0.04,Crypto:-0.15}},
+  {name:'Stagflation',year:2025,impacts:{Tech:-0.20,Finance:-0.15,Healthcare:-0.05,Consumer:-0.12,Energy:0.15,Index:-0.18,Bond:-0.15,Commodity:0.20,Crypto:-0.25}},
+];
+
+let portfolio=[];
+const PRESETS={
+  tech:[{ticker:'NVDA',weight:30},{ticker:'AAPL',weight:20},{ticker:'MSFT',weight:20},{ticker:'META',weight:15},{ticker:'TSLA',weight:15}],
+  balanced:[{ticker:'SPY',weight:30},{ticker:'QQQ',weight:15},{ticker:'TLT',weight:20},{ticker:'GLD',weight:10},{ticker:'JPM',weight:10},{ticker:'JNJ',weight:10},{ticker:'XOM',weight:5}],
+  conservative:[{ticker:'AGG',weight:35},{ticker:'TLT',weight:20},{ticker:'GLD',weight:15},{ticker:'PG',weight:10},{ticker:'KO',weight:10},{ticker:'JNJ',weight:10}],
+  crypto_mix:[{ticker:'BTC',weight:25},{ticker:'ETH',weight:15},{ticker:'NVDA',weight:20},{ticker:'SPY',weight:20},{ticker:'TLT',weight:10},{ticker:'GLD',weight:10}],
+  blackrock:[{ticker:'SPY',weight:25},{ticker:'AGG',weight:20},{ticker:'BLK',weight:10},{ticker:'GLD',weight:10},{ticker:'JPM',weight:10},{ticker:'MSFT',weight:10},{ticker:'UNH',weight:8},{ticker:'XOM',weight:7}]
+};
+
+// Math
+function normalRandom(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function choleskyDecompose(m){const n=m.length,L=Array.from({length:n},()=>new Float64Array(n));for(let i=0;i<n;i++)for(let j=0;j<=i;j++){let s=0;for(let k=0;k<j;k++)s+=L[i][k]*L[j][k];L[i][j]=i===j?Math.sqrt(Math.max(m[i][i]-s,1e-8)):(m[i][j]-s)/(L[j][j]||1e-8)}return L}
+
+function generateCorrelatedReturns(tickers,nSims,horizon){
+  const n=tickers.length;
+  const corrMatrix=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>getCorrelation(tickers[i],tickers[j])));
+  const covMatrix=corrMatrix.map((row,i)=>row.map((corr,j)=>corr*STOCK_DATA[tickers[i]].sigma*STOCK_DATA[tickers[j]].sigma*horizon));
+  const L=choleskyDecompose(covMatrix);
+  const returns=[];
+  for(let s=0;s<nSims;s++){
+    const z=Array.from({length:n},()=>normalRandom());
+    const c=new Float64Array(n);
+    for(let i=0;i<n;i++){let v=0;for(let j=0;j<=i;j++)v+=L[i][j]*z[j];c[i]=STOCK_DATA[tickers[i]].mu*horizon+v}
+    returns.push(c);
+  }
+  return{returns,corrMatrix,covMatrix};
+}
+
+function calcPortfolioReturns(returns,weights){return returns.map(r=>{let p=0;for(let i=0;i<weights.length;i++)p+=weights[i]*r[i];return p})}
+function percentile(arr,p){const s=[...arr].sort((a,b)=>a-b);return s[Math.floor(p*s.length)]}
+function mean(a){return a.reduce((s,v)=>s+v,0)/a.length}
+function std(a){const m=mean(a);return Math.sqrt(a.reduce((s,v)=>s+(v-m)**2,0)/a.length)}
+function skewness(a){const m=mean(a),s=std(a);return a.reduce((r,v)=>r+((v-m)/s)**3,0)/a.length}
+function kurtosis(a){const m=mean(a),s=std(a);return a.reduce((r,v)=>r+((v-m)/s)**4,0)/a.length-3}
+
+function loadPreset(name){portfolio=PRESETS[name].map(p=>({...p}));renderPortfolio()}
+function addTicker(){
+  const t=document.getElementById('ticker-input').value.toUpperCase().trim();
+  const w=parseFloat(document.getElementById('weight-input').value);
+  if(!t||!STOCK_DATA[t]){alert('Available tickers: '+Object.keys(STOCK_DATA).join(', '));return}
+  if(isNaN(w)||w<=0){alert('Enter valid weight %');return}
+  const ex=portfolio.find(p=>p.ticker===t);
+  if(ex)ex.weight=w;else portfolio.push({ticker:t,weight:w});
+  document.getElementById('ticker-input').value='';
+  renderPortfolio();
+}
+function removeTicker(t){portfolio=portfolio.filter(p=>p.ticker!==t);renderPortfolio()}
+function renderPortfolio(){
+  const grid=document.getElementById('portfolio-grid');
+  const tw=portfolio.reduce((a,p)=>a+p.weight,0);
+  grid.innerHTML=portfolio.map(p=>{
+    const d=STOCK_DATA[p.ticker],nw=(p.weight/tw*100).toFixed(1);
+    return`<div class="stock-chip active"><span class="ticker">${p.ticker}</span><span class="weight">${nw}%</span><span style="color:var(--text-muted);font-size:0.65rem">${d.sector}</span><span class="remove" onclick="removeTicker('${p.ticker}')">&times;</span></div>`;
+  }).join('');
+}
+
+function runAnalysis(){
+  if(portfolio.length<2){alert('Add at least 2 assets');return}
+  const confidence=parseFloat(document.getElementById('confidence-select').value);
+  const horizon=parseInt(document.getElementById('horizon-select').value);
+  const nSims=parseInt(document.getElementById('sims-select').value);
+  const tw=portfolio.reduce((a,p)=>a+p.weight,0);
+  const tickers=portfolio.map(p=>p.ticker),weights=portfolio.map(p=>p.weight/tw);
+
+  document.getElementById('header-sims').textContent=`Monte Carlo: ${nSims.toLocaleString()} paths`;
+  document.getElementById('header-conf').textContent=`Confidence: ${(confidence*100).toFixed(0)}%`;
+
+  const{returns,corrMatrix,covMatrix}=generateCorrelatedReturns(tickers,nSims,horizon);
+  const portReturns=calcPortfolioReturns(returns,weights);
+  const alpha=1-confidence;
+
+  const historicalVaR=-percentile(portReturns,alpha);
+  const portMu=mean(portReturns),portSigma=std(portReturns);
+  const zScore={0.90:1.282,0.95:1.645,0.99:2.326}[confidence]||1.645;
+  const parametricVaR=-(portMu-zScore*portSigma);
+  const sorted=[...portReturns].sort((a,b)=>a-b);
+  const mcVarIdx=Math.floor(alpha*sorted.length);
+  const mcVaR=-sorted[mcVarIdx];
+  const tailReturns=sorted.slice(0,mcVarIdx);
+  const cvar=tailReturns.length>0?-mean(tailReturns):mcVaR;
+
+  document.getElementById('dashboard').style.display='grid';
+  document.getElementById('ai-section').style.display='block';
+
+  renderVaR(historicalVaR,parametricVaR,mcVaR,cvar,confidence,horizon);
+  renderMC(portReturns,nSims,horizon,confidence,sorted);
+  renderCorr(tickers,corrMatrix);
+  renderStress(tickers,weights);
+  renderDist(portReturns,confidence,alpha);
+  renderRiskDecomp(tickers,weights,covMatrix);
+  generateAI(tickers,weights,mcVaR,cvar,portSigma,corrMatrix,confidence,horizon);
+
+  document.getElementById('var-confidence').textContent=`${(confidence*100).toFixed(0)}% Confidence`;
+  document.getElementById('mc-paths').textContent=`${nSims.toLocaleString()} paths`;
+  document.getElementById('dashboard').scrollIntoView({behavior:'smooth'});
+}
+
+function renderVaR(hist,param,mc,cvar,conf,horizon){
+  const hl={1:'1-Day',5:'1-Week',21:'1-Month',63:'3-Month'}[horizon]||horizon+'-Day';
+  document.getElementById('var-cards').innerHTML=`
+    <div class="var-card historical"><div class="var-method">Historical VaR</div>
+      <div class="var-number" style="color:var(--red)">${(hist*100).toFixed(2)}%</div>
+      <div class="var-sub">${hl} · ${(conf*100)}% conf · $100K → $${(hist*100000).toFixed(0)} max loss</div></div>
+    <div class="var-card parametric"><div class="var-method">Parametric VaR (Gaussian)</div>
+      <div class="var-number" style="color:var(--blue)">${(param*100).toFixed(2)}%</div>
+      <div class="var-sub">${hl} · Normal dist assumption · z=${({0.90:1.282,0.95:1.645,0.99:2.326}[conf]).toFixed(3)}</div></div>
+    <div class="var-card montecarlo"><div class="var-method">Monte Carlo VaR</div>
+      <div class="var-number" style="color:var(--cyan)">${(mc*100).toFixed(2)}%</div>
+      <div class="var-sub">${hl} · Cholesky-correlated simulation</div></div>
+    <div class="var-card cvar-card"><div class="var-method">CVaR / Expected Shortfall</div>
+      <div class="var-number" style="color:var(--amber)">${(cvar*100).toFixed(2)}%</div>
+      <div class="var-sub">Average loss beyond VaR · Tail risk measure</div></div>`;
+}
+
+function renderMC(portReturns,nSims,horizon,confidence,sorted){
+  const canvas=document.getElementById('mc-chart'),ctx=canvas.getContext('2d');
+  const W=canvas.parentElement.clientWidth,H=220;
+  canvas.width=W*2;canvas.height=H*2;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(2,2);ctx.clearRect(0,0,W,H);
+
+  const steps=Math.min(horizon,21),nShow=Math.min(300,nSims);
+  const paths=[];
+  for(let i=0;i<nShow;i++){
+    const path=[0],dailyR=portReturns[i]/steps;
+    for(let t=1;t<=steps;t++)path.push(path[t-1]+dailyR+normalRandom()*Math.abs(dailyR)*0.4);
+    paths.push(path);
+  }
+  let minY=0,maxY=0;
+  paths.forEach(p=>p.forEach(v=>{if(v<minY)minY=v;if(v>maxY)maxY=v}));
+  const pad=(maxY-minY)*0.1;minY-=pad;maxY+=pad;
+  const mL=45,mR=15,mT=10,mB=25,pW=W-mL-mR,pH=H-mT-mB;
+  const toX=t=>mL+(t/steps)*pW,toY=v=>mT+(1-(v-minY)/(maxY-minY))*pH;
+
+  ctx.strokeStyle='#1a1a1e';ctx.lineWidth=0.5;
+  for(let i=0;i<=4;i++){
+    const y=mT+(i/4)*pH;ctx.beginPath();ctx.moveTo(mL,y);ctx.lineTo(W-mR,y);ctx.stroke();
+    ctx.fillStyle='#52525b';ctx.font='9px IBM Plex Mono';ctx.textAlign='right';
+    ctx.fillText(((maxY-(i/4)*(maxY-minY))*100).toFixed(1)+'%',mL-6,y+3);
+  }
+  if(minY<0&&maxY>0){ctx.strokeStyle='#27272a';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(mL,toY(0));ctx.lineTo(W-mR,toY(0));ctx.stroke();ctx.setLineDash([])}
+
+  const varIdx=Math.floor((1-confidence)*nSims);
+  paths.forEach((path,i)=>{
+    ctx.beginPath();path.forEach((v,t)=>{t===0?ctx.moveTo(toX(t),toY(v)):ctx.lineTo(toX(t),toY(v))});
+    ctx.strokeStyle=portReturns[i]<sorted[varIdx]?'rgba(239,68,68,0.18)':portReturns[i]>0?'rgba(34,197,94,0.12)':'rgba(113,113,122,0.08)';
+    ctx.lineWidth=0.8;ctx.stroke();
+  });
+
+  const medRet=percentile(portReturns,0.5);
+  const medPath=paths.reduce((b,p)=>Math.abs(p[p.length-1]-medRet)<Math.abs(b[b.length-1]-medRet)?p:b);
+  ctx.beginPath();medPath.forEach((v,t)=>{t===0?ctx.moveTo(toX(t),toY(v)):ctx.lineTo(toX(t),toY(v))});
+  ctx.strokeStyle='#22c55e';ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle='#22c55e';ctx.font='9px IBM Plex Mono';ctx.textAlign='left';
+  ctx.fillText('Median',toX(steps)+4,toY(medPath[medPath.length-1])+3);
+
+  ctx.fillStyle='#52525b';ctx.textAlign='center';
+  for(let t=0;t<=steps;t+=Math.max(1,Math.floor(steps/5)))ctx.fillText('T+'+t,toX(t),H-4);
+}
+
+function renderCorr(tickers,corrMatrix){
+  const c=document.getElementById('corr-container'),n=tickers.length;
+  let h=`<div class="corr-matrix" style="grid-template-columns:repeat(${n+1},1fr)"><div class="corr-label"></div>`;
+  tickers.forEach(t=>{h+=`<div class="corr-label">${t}</div>`});
+  for(let i=0;i<n;i++){
+    h+=`<div class="corr-label">${tickers[i]}</div>`;
+    for(let j=0;j<n;j++){
+      const v=corrMatrix[i][j],col=v>0?`rgba(34,197,94,${Math.abs(v)*0.7})`:`rgba(239,68,68,${Math.abs(v)*0.7})`;
+      h+=`<div class="corr-cell" style="background:${col};color:${Math.abs(v)>0.5?'#fff':'var(--text-dim)'}" title="${tickers[i]}×${tickers[j]}: ${v.toFixed(2)}">${v.toFixed(2)}</div>`;
+    }
+  }
+  c.innerHTML=h+'</div>';
+}
+
+function renderStress(tickers,weights){
+  const tw=portfolio.reduce((a,p)=>a+p.weight,0);
+  const w=portfolio.map(p=>p.weight/tw);
+  let h=`<table class="stress-table"><thead><tr><th>Scenario</th><th>Year</th><th>Portfolio Impact</th><th>Worst Asset</th></tr></thead><tbody>`;
+  STRESS_SCENARIOS.forEach(s=>{
+    let pi=0,wa='',wv=0;
+    tickers.forEach((t,i)=>{
+      const imp=(s.impacts[STOCK_DATA[t].sector]||-0.15)*STOCK_DATA[t].beta;
+      pi+=imp*w[i];if(imp<wv){wv=imp;wa=t}
+    });
+    const col=pi<-0.20?'var(--red)':pi<-0.10?'var(--amber)':pi<0?'var(--text-dim)':'var(--green)';
+    const bw=Math.min(Math.abs(pi)*200,100),bc=pi<0?'var(--red)':'var(--green)';
+    h+=`<tr><td style="font-weight:500">${s.name}</td><td style="color:var(--text-muted)">${s.year}</td>
+      <td style="color:${col};font-weight:600">${(pi*100).toFixed(1)}%<span class="impact-bar" style="width:${bw}px;background:${bc}"></span></td>
+      <td style="color:var(--text-muted)">${wa} (${(wv*100).toFixed(1)}%)</td></tr>`;
+  });
+  document.getElementById('stress-container').innerHTML=h+'</tbody></table>';
+}
+
+function renderDist(portReturns,confidence,alpha){
+  const canvas=document.getElementById('dist-chart'),ctx=canvas.getContext('2d');
+  const W=canvas.parentElement.clientWidth,H=220;
+  canvas.width=W*2;canvas.height=H*2;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(2,2);ctx.clearRect(0,0,W,H);
+
+  const m=mean(portReturns),s=std(portReturns),sk=skewness(portReturns),ku=kurtosis(portReturns);
+  document.getElementById('dist-stats').textContent=`σ=${(s*100).toFixed(2)}% · Skew=${sk.toFixed(2)} · Kurt=${ku.toFixed(2)}`;
+
+  const nBins=60,sorted=[...portReturns].sort((a,b)=>a-b);
+  const minR=sorted[0],maxR=sorted[sorted.length-1],binW=(maxR-minR)/nBins;
+  const bins=new Array(nBins).fill(0);
+  portReturns.forEach(r=>{bins[Math.min(Math.floor((r-minR)/binW),nBins-1)]++});
+  const maxBin=Math.max(...bins),varT=percentile(portReturns,alpha);
+  const mL=45,mR=15,mT=10,mB=25,pW=W-mL-mR,pH=H-mT-mB;
+
+  bins.forEach((count,i)=>{
+    const x=mL+(i/nBins)*pW,w=pW/nBins-1,h=(count/maxBin)*pH,y=mT+pH-h,rv=minR+i*binW;
+    ctx.fillStyle=rv<varT?'rgba(239,68,68,0.6)':rv<0?'rgba(113,113,122,0.3)':'rgba(34,197,94,0.35)';
+    ctx.fillRect(x,y,Math.max(w,1),h);
+  });
+
+  const varX=mL+((varT-minR)/(maxR-minR))*pW;
+  ctx.strokeStyle='#ef4444';ctx.lineWidth=1.5;ctx.setLineDash([5,3]);
+  ctx.beginPath();ctx.moveTo(varX,mT);ctx.lineTo(varX,mT+pH);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#ef4444';ctx.font='bold 9px IBM Plex Mono';ctx.textAlign='center';
+  ctx.fillText(`VaR ${(varT*100).toFixed(1)}%`,varX,mT-2);
+
+  const meanX=mL+((m-minR)/(maxR-minR))*pW;
+  ctx.strokeStyle='#22c55e';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(meanX,mT);ctx.lineTo(meanX,mT+pH);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#22c55e';ctx.fillText('μ',meanX,H-4);
+
+  ctx.fillStyle='#52525b';ctx.font='9px IBM Plex Mono';
+  for(let i=0;i<=4;i++){const v=minR+(i/4)*(maxR-minR);ctx.textAlign='center';ctx.fillText((v*100).toFixed(1)+'%',mL+(i/4)*pW,H-4)}
+}
+
+function renderRiskDecomp(tickers,weights,covMatrix){
+  const canvas=document.getElementById('risk-decomp-chart'),ctx=canvas.getContext('2d');
+  const W=canvas.parentElement.clientWidth,H=220;
+  canvas.width=W*2;canvas.height=H*2;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(2,2);ctx.clearRect(0,0,W,H);
+
+  const n=tickers.length;
+  let pv=0;for(let i=0;i<n;i++)for(let j=0;j<n;j++)pv+=weights[i]*weights[j]*covMatrix[i][j];
+  const mcr=[];
+  for(let i=0;i<n;i++){let mc=0;for(let j=0;j<n;j++)mc+=weights[j]*covMatrix[i][j];mcr.push(weights[i]*mc/pv)}
+  const items=tickers.map((t,i)=>({ticker:t,contrib:mcr[i]})).sort((a,b)=>b.contrib-a.contrib);
+  const maxC=Math.max(...items.map(s=>Math.abs(s.contrib)));
+  const mL=55,mR=15,mT=10,mB=10,pW=W-mL-mR,pH=H-mT-mB;
+  const barH=Math.min(pH/items.length-4,22);
+  const colors={Tech:'#22c55e',Finance:'#3b82f6',Healthcare:'#a855f7',Consumer:'#f59e0b',Energy:'#ef4444',Index:'#06b6d4',Bond:'#64748b',Commodity:'#eab308',Crypto:'#f97316'};
+
+  items.forEach((item,i)=>{
+    const y=mT+i*(barH+4),w=Math.max((item.contrib/maxC)*pW*0.8,2);
+    ctx.fillStyle=colors[STOCK_DATA[item.ticker].sector]||'#71717a';ctx.globalAlpha=0.7;
+    ctx.fillRect(mL,y,w,barH);ctx.globalAlpha=1;
+    ctx.fillStyle='#e4e4e7';ctx.font='10px IBM Plex Mono';ctx.textAlign='right';
+    ctx.fillText(item.ticker,mL-6,y+barH/2+3);
+    ctx.fillStyle='#71717a';ctx.font='9px IBM Plex Mono';ctx.textAlign='left';
+    ctx.fillText(`${(item.contrib*100).toFixed(1)}%`,mL+w+6,y+barH/2+3);
+  });
+}
+
+function generateAI(tickers,weights,mcVaR,cvar,portSigma,corrMatrix,confidence,horizon){
+  const hl={1:'1-Day',5:'1-Week',21:'1-Month',63:'3-Month'}[horizon]||horizon+'-Day';
+  const sectorW={};tickers.forEach((t,i)=>{const s=STOCK_DATA[t].sector;sectorW[s]=(sectorW[s]||0)+weights[i]});
+  const topSec=Object.entries(sectorW).sort((a,b)=>b[1]-a[1])[0];
+  const conc=topSec[1]>0.40;
+  let highCorr=[];
+  for(let i=0;i<tickers.length;i++)for(let j=i+1;j<tickers.length;j++)if(corrMatrix[i][j]>0.65)highCorr.push({a:tickers[i],b:tickers[j],corr:corrMatrix[i][j]});
+  highCorr.sort((a,b)=>b.corr-a.corr);
+  const hasBonds=tickers.some(t=>STOCK_DATA[t].sector==='Bond');
+  const hasCommodity=tickers.some(t=>STOCK_DATA[t].sector==='Commodity');
+  let ws='',wl=0;
+  STRESS_SCENARIOS.forEach(s=>{let l=0;tickers.forEach((t,i)=>{l+=(s.impacts[STOCK_DATA[t].sector]||-0.15)*STOCK_DATA[t].beta*weights[i]});if(l<wl){wl=l;ws=s.name}});
+
+  let t=`<p><strong>Portfolio Risk Summary</strong></p>`;
+  t+=`<p>This portfolio's ${(confidence*100).toFixed(0)}% confidence ${hl} VaR is <span class="highlight-red">${(mcVaR*100).toFixed(2)}%</span>. On a $100,000 investment, there is a ${((1-confidence)*100).toFixed(0)}% probability of losing more than <span class="highlight-red">$${(mcVaR*100000).toFixed(0)}</span>. In the worst-case tail, the average expected loss (CVaR) reaches <span class="highlight-red">${(cvar*100).toFixed(2)}%</span>.</p>`;
+  if(conc)t+=`<p><span class="highlight-amber">⚠ Sector Concentration Risk:</span> <strong>${(topSec[1]*100).toFixed(0)}%</strong> of the portfolio is concentrated in ${topSec[0]}. ${!hasBonds?'Adding bond exposure (TLT, AGG) could improve diversification.':''}</p>`;
+  if(highCorr.length>0)t+=`<p><span class="highlight-amber">⚠ High Correlation Pairs:</span> ${highCorr.slice(0,3).map(p=>`${p.a}-${p.b} (ρ=${p.corr.toFixed(2)})`).join(', ')} — limiting effective diversification.</p>`;
+  t+=`<p><strong>Stress Test:</strong> Worst-case scenario is <strong>${ws}</strong>, with a potential portfolio drawdown of <span class="highlight-red">${(wl*100).toFixed(1)}%</span>.</p>`;
+  t+=`<p><strong>Risk Management Recommendations:</strong></p><p>`;
+  const sug=[];
+  if(conc)sug.push(`Reduce ${topSec[0]} sector weight below 40%`);
+  if(!hasBonds)sug.push('Add 10-20% bond ETF allocation (TLT/AGG) to leverage negative correlation');
+  if(!hasCommodity&&!hasBonds)sug.push('Add 5-10% gold (GLD) as an inflation hedge');
+  if(sectorW['Crypto']>0.15)sug.push(`Reduce crypto weight from ${(sectorW['Crypto']*100).toFixed(0)}% to below 10%`);
+  if(portSigma>0.03)sug.push('Overall volatility is elevated — consider increasing low-volatility asset allocation');
+  if(!sug.length)sug.push('This portfolio is relatively well-diversified');
+  t+=sug.map((s,i)=>`${i+1}. ${s}`).join('<br>')+'</p>';
+  document.getElementById('ai-text').innerHTML=t;
+}
+
+window.addEventListener('load',()=>{
+  const msgs=['Initializing risk models...','Loading market parameters...','Calibrating Monte Carlo engine...','Ready.'];
+  let step=0;const fill=document.getElementById('loading-fill'),msg=document.getElementById('loading-msg');
+  const iv=setInterval(()=>{step++;if(step<msgs.length){msg.textContent=msgs[step];fill.style.width=(step/msgs.length*100)+'%'}
+    if(step>=msgs.length){clearInterval(iv);fill.style.width='100%';setTimeout(()=>document.getElementById('loading').classList.add('hidden'),300)}},400);
+  loadPreset('tech');
+});
+</script>
+</body>
+</html>
