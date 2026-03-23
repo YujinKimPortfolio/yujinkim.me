@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yujin Kim — Portfolio Decision Optimizer</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#0a0a0b;--surface:#111113;--surface2:#18181b;--border:#27272a;
+--text:#e4e4e7;--text-dim:#71717a;--text-muted:#52525b;
+--green:#22c55e;--green-dim:#16a34a;--green-bg:rgba(34,197,94,0.08);
+--red:#ef4444;--red-bg:rgba(239,68,68,0.08);
+--amber:#f59e0b;--amber-bg:rgba(245,158,11,0.08);
+--blue:#3b82f6;--blue-bg:rgba(59,130,246,0.08);
+--cyan:#06b6d4;--purple:#a855f7;
+--font-mono:'IBM Plex Mono',monospace;
+--font-display:'Cormorant Garamond',serif;
+}
+html{font-size:14px}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh;overflow-x:hidden}
+::selection{background:var(--blue);color:var(--bg)}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+.header{padding:24px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;background:var(--bg);backdrop-filter:blur(20px)}
+.logo{display:flex;align-items:baseline;gap:12px}
+.logo h1{font-family:var(--font-display);font-size:1.8rem;font-weight:700;letter-spacing:0.02em;color:var(--blue)}
+.logo .ver{font-size:0.7rem;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase}
+.back-link{text-decoration:none;color:var(--text-dim);font-size:0.75rem;border:1px solid var(--border);padding:4px 10px;border-radius:3px;transition:all 0.2s}
+.back-link:hover{border-color:var(--blue);color:var(--blue)}
+.header-status{display:flex;align-items:center;gap:16px;font-size:0.75rem;color:var(--text-dim)}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);display:inline-block;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+.phase-badge{display:inline-flex;align-items:center;gap:8px;padding:20px 32px;border-bottom:1px solid var(--border);font-size:0.7rem;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase}
+.phase-badge .p1{color:var(--green)}
+.phase-badge .arrow{color:var(--text-muted);margin:0 4px}
+.phase-badge .p2{color:var(--blue);font-weight:600}
+
+.section{padding:24px 32px;border-bottom:1px solid var(--border)}
+.section-label{font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px}
+.section-desc{font-size:0.8rem;color:var(--text-dim);margin-bottom:16px;max-width:700px;line-height:1.7}
+
+/* Portfolio Input */
+.portfolio-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.stock-chip{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:8px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all 0.2s;font-size:0.8rem}
+.stock-chip:hover{border-color:var(--blue);background:var(--blue-bg)}
+.stock-chip.active{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}
+.stock-chip .ticker{font-weight:600}
+.stock-chip .weight{color:var(--text-dim);font-size:0.7rem}
+.stock-chip .remove{color:var(--text-muted);margin-left:4px;cursor:pointer;font-size:0.9rem}
+.stock-chip .remove:hover{color:var(--red)}
+
+.controls-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.ctrl-group{display:flex;align-items:center;gap:6px}
+.ctrl-group label{font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em}
+.ctrl-input{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;width:100px;outline:none;transition:border 0.2s}
+.ctrl-input:focus{border-color:var(--blue)}
+select.ctrl-input{cursor:pointer;-webkit-appearance:none;appearance:none;padding-right:24px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2371717a'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+
+.presets{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.preset-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:5px 12px;border-radius:3px;font-family:var(--font-mono);font-size:0.7rem;cursor:pointer;transition:all 0.2s;letter-spacing:0.05em}
+.preset-btn:hover{border-color:var(--blue);color:var(--blue)}
+
+.btn-run{background:var(--blue);color:white;border:none;padding:8px 20px;border-radius:3px;font-family:var(--font-mono);font-size:0.8rem;font-weight:600;cursor:pointer;letter-spacing:0.05em;transition:all 0.2s;text-transform:uppercase}
+.btn-run:hover{background:#60a5fa;transform:translateY(-1px)}
+.btn-secondary{background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:8px 16px;border-radius:3px;font-family:var(--font-mono);font-size:0.75rem;cursor:pointer;transition:all 0.2s}
+.btn-secondary:hover{border-color:var(--text-dim);color:var(--text)}
+
+/* Constraints */
+.constraint-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.constraint-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:16px}
+.constraint-label{font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px}
+.constraint-value{font-size:1.4rem;font-weight:700;font-family:var(--font-display)}
+.slider-row{display:flex;align-items:center;gap:12px;margin-top:8px}
+.slider-row input[type="range"]{flex:1;accent-color:var(--blue);height:4px;-webkit-appearance:none;background:var(--border);border-radius:2px;outline:none}
+.slider-row input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--blue);cursor:pointer}
+.slider-val{font-size:0.8rem;font-weight:600;min-width:45px;text-align:right}
+
+/* Dashboard */
+.dashboard{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);margin:0}
+.panel{background:var(--bg);padding:24px 28px;min-height:320px;position:relative;overflow:hidden}
+.panel-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px}
+.panel-title{font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted)}
+.panel-value{font-size:0.8rem;font-weight:500}
+canvas{width:100%!important;height:auto!important}
+.chart-container{position:relative;width:100%;height:280px}
+
+/* Comparison Table */
+.compare-table{width:100%;border-collapse:collapse;margin-top:8px}
+.compare-table th{font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);text-align:left;padding:10px 8px;border-bottom:1px solid var(--border);font-weight:500}
+.compare-table td{padding:10px 8px;font-size:0.85rem;border-bottom:1px solid var(--surface2)}
+.compare-table tr:hover td{background:var(--surface)}
+.compare-table .better{color:var(--green)}
+.compare-table .worse{color:var(--red)}
+
+/* Reallocation */
+.realloc-table{width:100%;border-collapse:collapse;margin-top:8px}
+.realloc-table th{font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);text-align:left;padding:8px 6px;border-bottom:1px solid var(--border);font-weight:500}
+.realloc-table td{padding:8px 6px;font-size:0.8rem;border-bottom:1px solid var(--surface2)}
+.realloc-table tr:hover td{background:var(--surface)}
+.change-bar{height:6px;border-radius:3px;display:inline-block;vertical-align:middle;margin-left:6px}
+
+/* AI Section */
+.ai-section{border-top:1px solid var(--border);padding:24px 32px}
+.ai-badge{display:inline-flex;align-items:center;gap:6px;background:var(--blue-bg);border:1px solid rgba(59,130,246,0.2);padding:4px 10px;border-radius:3px;font-size:0.65rem;color:var(--blue);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px}
+.ai-text{font-size:0.85rem;line-height:1.8;color:var(--text-dim);max-width:900px}
+.ai-text strong{color:var(--text);font-weight:500}
+.ai-text .hl-blue{color:var(--blue)}
+.ai-text .hl-green{color:var(--green)}
+.ai-text .hl-red{color:var(--red)}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn 0.4s ease forwards;opacity:0}
+
+@media(max-width:900px){
+.dashboard{grid-template-columns:1fr}
+.header{padding:16px 20px;flex-direction:column;gap:8px;align-items:flex-start}
+.section{padding:16px 20px}
+.panel{padding:20px}
+.constraint-grid{grid-template-columns:1fr}
+.ai-section{padding:16px 20px}
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <a href="https://yujinkim.me" class="back-link">← yujinkim.me</a>
+    <h1>OPTIMIZER</h1>
+    <span class="ver">v1.0 — Yujin Kim · Portfolio Decision Optimization</span>
+  </div>
+  <div class="header-status">
+    <span id="header-obj">Objective: Max Sharpe</span>
+    <span>|</span>
+    <span id="header-status-text">Ready</span>
+    <span><span class="status-dot"></span></span>
+  </div>
+</header>
+
+<div class="phase-badge">
+  <span class="p1">Phase 1 — Risk Engine</span>
+  <span class="arrow">→</span>
+  <span class="p2">Phase 2 — Decision Optimizer</span>
+  <span style="margin-left:16px;color:var(--text-muted);font-style:italic;font-size:0.65rem;letter-spacing:0.05em">
+    "Risk metrics alone were insufficient — extended into optimization framework"
+  </span>
+</div>
+
+<section class="section">
+  <div class="section-label">Current Portfolio</div>
+  <div class="section-desc">Enter your current portfolio. The optimizer will find the best allocation given your risk constraints.</div>
+  
+  <div class="presets">
+    <button class="preset-btn" onclick="loadPreset('tech')">⚡ Tech Heavy</button>
+    <button class="preset-btn" onclick="loadPreset('balanced')">⚖️ Balanced</button>
+    <button class="preset-btn" onclick="loadPreset('conservative')">🛡️ Conservative</button>
+    <button class="preset-btn" onclick="loadPreset('crypto_mix')">₿ Crypto Mix</button>
+  </div>
+  
+  <div class="portfolio-grid" id="portfolio-grid"></div>
+  
+  <div class="controls-row" style="margin-top:14px">
+    <div class="ctrl-group">
+      <label>Ticker</label>
+      <input type="text" class="ctrl-input" id="ticker-input" placeholder="e.g. TSLA" style="width:90px" onkeydown="if(event.key==='Enter')addTicker()">
+      <label>Wt%</label>
+      <input type="number" class="ctrl-input" id="weight-input" placeholder="%" style="width:60px" value="10" onkeydown="if(event.key==='Enter')addTicker()">
+      <button class="btn-secondary" onclick="addTicker()">+ Add</button>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">Optimization Constraints</div>
+  <div class="section-desc">Set your risk tolerance and constraints. The optimizer will find the best portfolio within these bounds.</div>
+  
+  <div class="constraint-grid">
+    <div class="constraint-card">
+      <div class="constraint-label">Risk Tolerance</div>
+      <div class="slider-row">
+        <input type="range" id="risk-tolerance" min="1" max="10" value="5" oninput="updateSliders()">
+        <span class="slider-val" id="risk-tol-val">5 / 10</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--text-muted);margin-top:4px">
+        <span>Conservative</span><span>Aggressive</span>
+      </div>
+    </div>
+    <div class="constraint-card">
+      <div class="constraint-label">Max Single Asset Weight</div>
+      <div class="slider-row">
+        <input type="range" id="max-weight" min="10" max="50" value="30" oninput="updateSliders()">
+        <span class="slider-val" id="max-wt-val">30%</span>
+      </div>
+    </div>
+    <div class="constraint-card">
+      <div class="constraint-label">Max Sector Concentration</div>
+      <div class="slider-row">
+        <input type="range" id="max-sector" min="20" max="80" value="50" oninput="updateSliders()">
+        <span class="slider-val" id="max-sec-val">50%</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="controls-row">
+    <div class="ctrl-group">
+      <label>Objective</label>
+      <select class="ctrl-input" id="objective-select" style="width:160px">
+        <option value="max_sharpe">Max Sharpe Ratio</option>
+        <option value="min_var">Min Variance</option>
+        <option value="max_return">Max Return (constrained)</option>
+        <option value="risk_parity">Risk Parity</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Sims</label>
+      <select class="ctrl-input" id="sims-select" style="width:100px">
+        <option value="5000">5,000</option>
+        <option value="10000" selected>10,000</option>
+        <option value="20000">20,000</option>
+      </select>
+    </div>
+    <button class="btn-run" onclick="runOptimization()">▶ Optimize Portfolio</button>
+  </div>
+</section>
+
+<div class="dashboard" id="dashboard" style="display:none">
+  <div class="panel fade-in" style="animation-delay:0.1s">
+    <div class="panel-header">
+      <span class="panel-title">Efficient Frontier</span>
+      <span class="panel-value">Risk vs Return</span>
+    </div>
+    <div class="chart-container"><canvas id="frontier-chart"></canvas></div>
+  </div>
+
+  <div class="panel fade-in" style="animation-delay:0.2s">
+    <div class="panel-header">
+      <span class="panel-title">Before vs After</span>
+      <span class="panel-value">Key Metrics Comparison</span>
+    </div>
+    <div id="compare-container"></div>
+  </div>
+
+  <div class="panel fade-in" style="animation-delay:0.3s">
+    <div class="panel-header">
+      <span class="panel-title">Optimal Allocation</span>
+      <span class="panel-value" id="alloc-obj">Max Sharpe</span>
+    </div>
+    <div class="chart-container"><canvas id="alloc-chart"></canvas></div>
+  </div>
+
+  <div class="panel fade-in" style="animation-delay:0.4s">
+    <div class="panel-header">
+      <span class="panel-title">Reallocation Changes</span>
+      <span class="panel-value">Current → Optimal</span>
+    </div>
+    <div id="realloc-container"></div>
+  </div>
+</div>
+
+<section class="ai-section" id="ai-section" style="display:none">
+  <div class="ai-badge">◆ Optimization Summary</div>
+  <div class="ai-text" id="ai-text"></div>
+</section>
+
+<script>
+const STOCK_DATA={
+  AAPL:{name:'Apple',sector:'Tech',mu:0.0008,sigma:0.018,beta:1.15},
+  MSFT:{name:'Microsoft',sector:'Tech',mu:0.0009,sigma:0.017,beta:1.10},
+  NVDA:{name:'NVIDIA',sector:'Tech',mu:0.0015,sigma:0.032,beta:1.65},
+  GOOGL:{name:'Alphabet',sector:'Tech',mu:0.0007,sigma:0.019,beta:1.12},
+  META:{name:'Meta',sector:'Tech',mu:0.0010,sigma:0.025,beta:1.30},
+  TSLA:{name:'Tesla',sector:'Tech',mu:0.0012,sigma:0.038,beta:1.80},
+  AMZN:{name:'Amazon',sector:'Tech',mu:0.0008,sigma:0.020,beta:1.20},
+  NFLX:{name:'Netflix',sector:'Tech',mu:0.0009,sigma:0.028,beta:1.35},
+  AMD:{name:'AMD',sector:'Tech',mu:0.0012,sigma:0.035,beta:1.70},
+  JPM:{name:'JPMorgan',sector:'Finance',mu:0.0006,sigma:0.016,beta:1.05},
+  GS:{name:'Goldman Sachs',sector:'Finance',mu:0.0007,sigma:0.019,beta:1.25},
+  BAC:{name:'Bank of America',sector:'Finance',mu:0.0004,sigma:0.018,beta:1.15},
+  BLK:{name:'BlackRock',sector:'Finance',mu:0.0007,sigma:0.017,beta:1.10},
+  MS:{name:'Morgan Stanley',sector:'Finance',mu:0.0006,sigma:0.019,beta:1.20},
+  V:{name:'Visa',sector:'Finance',mu:0.0007,sigma:0.014,beta:0.95},
+  JNJ:{name:'J&J',sector:'Healthcare',mu:0.0003,sigma:0.011,beta:0.65},
+  UNH:{name:'UnitedHealth',sector:'Healthcare',mu:0.0006,sigma:0.014,beta:0.80},
+  PFE:{name:'Pfizer',sector:'Healthcare',mu:0.0002,sigma:0.015,beta:0.70},
+  LLY:{name:'Eli Lilly',sector:'Healthcare',mu:0.0010,sigma:0.018,beta:0.75},
+  PG:{name:'P&G',sector:'Consumer',mu:0.0003,sigma:0.010,beta:0.55},
+  KO:{name:'Coca-Cola',sector:'Consumer',mu:0.0003,sigma:0.009,beta:0.50},
+  WMT:{name:'Walmart',sector:'Consumer',mu:0.0004,sigma:0.011,beta:0.55},
+  COST:{name:'Costco',sector:'Consumer',mu:0.0006,sigma:0.013,beta:0.70},
+  DIS:{name:'Disney',sector:'Consumer',mu:0.0004,sigma:0.018,beta:1.00},
+  XOM:{name:'ExxonMobil',sector:'Energy',mu:0.0005,sigma:0.018,beta:0.90},
+  CVX:{name:'Chevron',sector:'Energy',mu:0.0005,sigma:0.017,beta:0.85},
+  SPY:{name:'S&P 500 ETF',sector:'Index',mu:0.0005,sigma:0.012,beta:1.00},
+  QQQ:{name:'Nasdaq 100 ETF',sector:'Index',mu:0.0007,sigma:0.016,beta:1.15},
+  TLT:{name:'20Y Treasury',sector:'Bond',mu:0.0001,sigma:0.012,beta:-0.15},
+  AGG:{name:'US Agg Bond',sector:'Bond',mu:0.0001,sigma:0.005,beta:-0.05},
+  HYG:{name:'High Yield Bond',sector:'Bond',mu:0.0002,sigma:0.008,beta:0.20},
+  GLD:{name:'Gold ETF',sector:'Commodity',mu:0.0003,sigma:0.011,beta:0.05},
+  SLV:{name:'Silver ETF',sector:'Commodity',mu:0.0003,sigma:0.020,beta:0.15},
+  BTC:{name:'Bitcoin',sector:'Crypto',mu:0.0020,sigma:0.045,beta:1.50},
+  ETH:{name:'Ethereum',sector:'Crypto',mu:0.0018,sigma:0.055,beta:1.80},
+};
+
+const SECTOR_CORR={
+  'Tech-Tech':0.72,'Tech-Finance':0.55,'Tech-Healthcare':0.30,'Tech-Consumer':0.25,
+  'Tech-Energy':0.20,'Tech-Index':0.85,'Tech-Bond':-0.25,'Tech-Commodity':0.05,'Tech-Crypto':0.40,
+  'Finance-Finance':0.68,'Finance-Healthcare':0.35,'Finance-Consumer':0.30,
+  'Finance-Energy':0.40,'Finance-Index':0.75,'Finance-Bond':-0.20,'Finance-Commodity':0.10,'Finance-Crypto':0.30,
+  'Healthcare-Healthcare':0.55,'Healthcare-Consumer':0.40,
+  'Healthcare-Energy':0.20,'Healthcare-Index':0.60,'Healthcare-Bond':0.05,'Healthcare-Commodity':0.10,'Healthcare-Crypto':0.15,
+  'Consumer-Consumer':0.50,'Consumer-Energy':0.20,'Consumer-Index':0.55,'Consumer-Bond':0.10,'Consumer-Commodity':0.15,'Consumer-Crypto':0.10,
+  'Energy-Energy':0.65,'Energy-Index':0.50,'Energy-Bond':-0.10,'Energy-Commodity':0.35,'Energy-Crypto':0.15,
+  'Index-Index':0.90,'Index-Bond':-0.30,'Index-Commodity':0.10,'Index-Crypto':0.35,
+  'Bond-Bond':0.85,'Bond-Commodity':0.25,'Bond-Crypto':-0.15,
+  'Commodity-Commodity':1.0,'Commodity-Crypto':0.20,
+  'Crypto-Crypto':0.82
+};
+
+function getCorrelation(t1,t2){
+  if(t1===t2)return 1.0;
+  const s1=STOCK_DATA[t1].sector,s2=STOCK_DATA[t2].sector;
+  const key1=`${s1}-${s2}`,key2=`${s2}-${s1}`;
+  let base=SECTOR_CORR[key1]||SECTOR_CORR[key2]||0.3;
+  const seed=(t1+t2).split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  return Math.max(-0.95,Math.min(0.99,base+((seed%20)-10)/100));
+}
+
+let portfolio=[];
+const PRESETS={
+  tech:[{ticker:'NVDA',weight:30},{ticker:'AAPL',weight:20},{ticker:'MSFT',weight:20},{ticker:'META',weight:15},{ticker:'TSLA',weight:15}],
+  balanced:[{ticker:'SPY',weight:30},{ticker:'QQQ',weight:15},{ticker:'TLT',weight:20},{ticker:'GLD',weight:10},{ticker:'JPM',weight:10},{ticker:'JNJ',weight:10},{ticker:'XOM',weight:5}],
+  conservative:[{ticker:'AGG',weight:35},{ticker:'TLT',weight:20},{ticker:'GLD',weight:15},{ticker:'PG',weight:10},{ticker:'KO',weight:10},{ticker:'JNJ',weight:10}],
+  crypto_mix:[{ticker:'BTC',weight:25},{ticker:'ETH',weight:15},{ticker:'NVDA',weight:20},{ticker:'SPY',weight:20},{ticker:'TLT',weight:10},{ticker:'GLD',weight:10}],
+};
+
+function normalRandom(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+
+function loadPreset(name){portfolio=PRESETS[name].map(p=>({...p}));renderPortfolio()}
+function addTicker(){
+  const t=document.getElementById('ticker-input').value.toUpperCase().trim();
+  const w=parseFloat(document.getElementById('weight-input').value);
+  if(!t||!STOCK_DATA[t]){alert('Available: '+Object.keys(STOCK_DATA).join(', '));return}
+  if(isNaN(w)||w<=0){alert('Enter valid weight');return}
+  const ex=portfolio.find(p=>p.ticker===t);
+  if(ex)ex.weight=w;else portfolio.push({ticker:t,weight:w});
+  document.getElementById('ticker-input').value='';
+  renderPortfolio();
+}
+function removeTicker(t){portfolio=portfolio.filter(p=>p.ticker!==t);renderPortfolio()}
+function renderPortfolio(){
+  const grid=document.getElementById('portfolio-grid');
+  const tw=portfolio.reduce((a,p)=>a+p.weight,0);
+  grid.innerHTML=portfolio.map(p=>{
+    const d=STOCK_DATA[p.ticker],nw=(p.weight/tw*100).toFixed(1);
+    return`<div class="stock-chip active"><span class="ticker">${p.ticker}</span><span class="weight">${nw}%</span><span style="color:var(--text-muted);font-size:0.65rem">${d.sector}</span><span class="remove" onclick="removeTicker('${p.ticker}')">&times;</span></div>`;
+  }).join('');
+  if(portfolio.length>0){
+    const wc=tw===100?'var(--green)':tw>100?'var(--red)':'var(--amber)';
+    grid.innerHTML+=`<div style="display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:0.75rem;color:${wc};border:1px solid ${wc};border-radius:4px;background:rgba(0,0,0,0.3)">Σ ${tw.toFixed(0)}%${tw!==100?' (auto-normalized)':''}</div>`;
+  }
+}
+function updateSliders(){
+  document.getElementById('risk-tol-val').textContent=document.getElementById('risk-tolerance').value+' / 10';
+  document.getElementById('max-wt-val').textContent=document.getElementById('max-weight').value+'%';
+  document.getElementById('max-sec-val').textContent=document.getElementById('max-sector').value+'%';
+}
+
+function portfolioStats(tickers,weights){
+  const n=tickers.length,horizon=21;
+  let mu=0;
+  for(let i=0;i<n;i++)mu+=weights[i]*STOCK_DATA[tickers[i]].mu*horizon;
+  let variance=0;
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){
+    variance+=weights[i]*weights[j]*getCorrelation(tickers[i],tickers[j])*STOCK_DATA[tickers[i]].sigma*STOCK_DATA[tickers[j]].sigma*horizon;
+  }
+  const sigma=Math.sqrt(variance);
+  const sharpe=sigma>0?(mu-0.0001*horizon)/sigma:0;
+  const var95=-(mu-1.645*sigma);
+  return{mu,sigma,sharpe,var95};
+}
+
+function runOptimization(){
+  if(portfolio.length<2){alert('Add at least 2 assets');return}
+  const tw=portfolio.reduce((a,p)=>a+p.weight,0);
+  const tickers=portfolio.map(p=>p.ticker);
+  const currentWeights=portfolio.map(p=>p.weight/tw);
+  const n=tickers.length;
+  const objective=document.getElementById('objective-select').value;
+  const nSims=parseInt(document.getElementById('sims-select').value);
+  const riskTol=parseInt(document.getElementById('risk-tolerance').value);
+  const maxWt=parseInt(document.getElementById('max-weight').value)/100;
+  const maxSec=parseInt(document.getElementById('max-sector').value)/100;
+
+  document.getElementById('header-obj').textContent='Objective: '+{max_sharpe:'Max Sharpe',min_var:'Min Variance',max_return:'Max Return',risk_parity:'Risk Parity'}[objective];
+  document.getElementById('alloc-obj').textContent={max_sharpe:'Max Sharpe Ratio',min_var:'Minimum Variance',max_return:'Max Return',risk_parity:'Risk Parity'}[objective];
+
+  // Generate random portfolios on the frontier
+  const frontierPoints=[];
+  let bestPortfolio=null,bestScore=-Infinity;
+
+  // Check how many unique sectors we have
+  const uniqueSectors=new Set(tickers.map(t=>STOCK_DATA[t].sector));
+  const effectiveMaxSec=uniqueSectors.size===1?1.0:maxSec; // If all same sector, ignore sector constraint
+
+  for(let s=0;s<nSims;s++){
+    // Generate constrained random weights using Dirichlet-like approach
+    let w=Array.from({length:n},()=>Math.random()**2); // Squared for more variation
+    const wSum=w.reduce((a,v)=>a+v,0);
+    w=w.map(v=>v/wSum);
+
+    // Clip to max weight and renormalize
+    let clipped=true,iterations=0;
+    while(clipped&&iterations<5){
+      clipped=false;iterations++;
+      for(let i=0;i<n;i++){if(w[i]>maxWt){w[i]=maxWt;clipped=true}}
+      const ws=w.reduce((a,v)=>a+v,0);
+      if(ws>0)w=w.map(v=>v/ws);
+    }
+
+    // Check sector constraint (skip if only 1 sector)
+    let valid=true;
+    if(effectiveMaxSec<1.0){
+      const secW={};
+      tickers.forEach((t,i)=>{const sec=STOCK_DATA[t].sector;secW[sec]=(secW[sec]||0)+w[i]});
+      for(const sec in secW)if(secW[sec]>effectiveMaxSec+0.05){valid=false;break} // 5% tolerance
+    }
+    if(!valid)continue;
+
+    const stats=portfolioStats(tickers,w);
+    frontierPoints.push({weights:w,mu:stats.mu,sigma:stats.sigma,sharpe:stats.sharpe,var95:stats.var95});
+
+    let score=0;
+    if(objective==='max_sharpe')score=stats.sharpe;
+    else if(objective==='min_var')score=-stats.sigma;
+    else if(objective==='max_return')score=stats.mu-(11-riskTol)*0.3*stats.sigma;
+    else if(objective==='risk_parity'){
+      const rc=[];
+      for(let i=0;i<n;i++){
+        let mcr=0;
+        for(let j=0;j<n;j++)mcr+=w[j]*getCorrelation(tickers[i],tickers[j])*STOCK_DATA[tickers[i]].sigma*STOCK_DATA[tickers[j]].sigma*21;
+        rc.push(w[i]*mcr);
+      }
+      const rcMean=rc.reduce((a,v)=>a+v,0)/n;
+      const rcVar=rc.reduce((a,v)=>a+(v-rcMean)**2,0)/n;
+      score=-rcVar;
+    }
+    if(score>bestScore){bestScore=score;bestPortfolio={weights:w,...stats}}
+  }
+
+  // Fallback: if no valid portfolio found, use equal weight
+  if(!bestPortfolio){
+    const eqW=Array(n).fill(1/n);
+    const eqStats=portfolioStats(tickers,eqW);
+    bestPortfolio={weights:eqW,...eqStats};
+    frontierPoints.push({weights:eqW,...eqStats});
+  }
+
+  const currentStats=portfolioStats(tickers,currentWeights);
+
+  document.getElementById('dashboard').style.display='grid';
+  document.getElementById('ai-section').style.display='block';
+  document.getElementById('header-status-text').textContent='Optimized';
+
+  renderFrontier(frontierPoints,currentStats,bestPortfolio);
+  renderComparison(currentStats,bestPortfolio);
+  renderAllocation(tickers,bestPortfolio.weights);
+  renderReallocation(tickers,currentWeights,bestPortfolio.weights);
+  generateAI(tickers,currentWeights,bestPortfolio.weights,currentStats,bestPortfolio,objective);
+
+  document.getElementById('dashboard').scrollIntoView({behavior:'smooth'});
+}
+
+function renderFrontier(points,current,optimal){
+  const canvas=document.getElementById('frontier-chart'),ctx=canvas.getContext('2d');
+  const W=canvas.parentElement.clientWidth,H=280;
+  canvas.width=W*2;canvas.height=H*2;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(2,2);ctx.clearRect(0,0,W,H);
+
+  const allSigma=points.map(p=>p.sigma).concat([current.sigma,optimal.sigma]);
+  const allMu=points.map(p=>p.mu).concat([current.mu,optimal.mu]);
+  let minX=Math.min(...allSigma),maxX=Math.max(...allSigma);
+  let minY=Math.min(...allMu),maxY=Math.max(...allMu);
+  const padX=(maxX-minX)*0.15,padY=(maxY-minY)*0.15;
+  minX-=padX;maxX+=padX;minY-=padY;maxY+=padY;
+
+  const mL=55,mR=20,mT=20,mB=35,pW=W-mL-mR,pH=H-mT-mB;
+  const toX=v=>mL+(v-minX)/(maxX-minX)*pW;
+  const toY=v=>mT+(1-(v-minY)/(maxY-minY))*pH;
+
+  // Grid
+  ctx.strokeStyle='#1a1a1e';ctx.lineWidth=0.5;
+  for(let i=0;i<=4;i++){
+    const y=mT+(i/4)*pH;
+    ctx.beginPath();ctx.moveTo(mL,y);ctx.lineTo(W-mR,y);ctx.stroke();
+    ctx.fillStyle='#52525b';ctx.font='9px IBM Plex Mono';ctx.textAlign='right';
+    ctx.fillText(((maxY-(i/4)*(maxY-minY))*100).toFixed(1)+'%',mL-6,y+3);
+  }
+  for(let i=0;i<=4;i++){
+    const x=mL+(i/4)*pW;
+    ctx.fillStyle='#52525b';ctx.textAlign='center';
+    ctx.fillText(((minX+(i/4)*(maxX-minX))*100).toFixed(1)+'%',x,H-8);
+  }
+  ctx.fillStyle='#52525b';ctx.font='9px IBM Plex Mono';
+  ctx.save();ctx.translate(12,mT+pH/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.fillText('Return (1M)',0,0);ctx.restore();
+  ctx.textAlign='center';ctx.fillText('Risk (σ)',mL+pW/2,H-2);
+
+  // Scatter points
+  points.forEach(p=>{
+    ctx.beginPath();ctx.arc(toX(p.sigma),toY(p.mu),1.5,0,Math.PI*2);
+    ctx.fillStyle='rgba(59,130,246,0.12)';ctx.fill();
+  });
+
+  // Efficient frontier (upper boundary)
+  const sorted=[...points].sort((a,b)=>a.sigma-b.sigma);
+  const buckets={};
+  sorted.forEach(p=>{
+    const k=Math.round(p.sigma*1000);
+    if(!buckets[k]||p.mu>buckets[k].mu)buckets[k]=p;
+  });
+  const frontier=Object.values(buckets).sort((a,b)=>a.sigma-b.sigma);
+  if(frontier.length>2){
+    ctx.beginPath();
+    frontier.forEach((p,i)=>{i===0?ctx.moveTo(toX(p.sigma),toY(p.mu)):ctx.lineTo(toX(p.sigma),toY(p.mu))});
+    ctx.strokeStyle='rgba(59,130,246,0.5)';ctx.lineWidth=2;ctx.stroke();
+  }
+
+  // Current portfolio
+  ctx.beginPath();ctx.arc(toX(current.sigma),toY(current.mu),7,0,Math.PI*2);
+  ctx.fillStyle='rgba(239,68,68,0.3)';ctx.fill();
+  ctx.beginPath();ctx.arc(toX(current.sigma),toY(current.mu),4,0,Math.PI*2);
+  ctx.fillStyle='#ef4444';ctx.fill();
+  ctx.fillStyle='#ef4444';ctx.font='bold 10px IBM Plex Mono';ctx.textAlign='left';
+  ctx.fillText('Current',toX(current.sigma)+10,toY(current.mu)+4);
+
+  // Optimal portfolio
+  ctx.beginPath();ctx.arc(toX(optimal.sigma),toY(optimal.mu),7,0,Math.PI*2);
+  ctx.fillStyle='rgba(34,197,94,0.3)';ctx.fill();
+  ctx.beginPath();ctx.arc(toX(optimal.sigma),toY(optimal.mu),4,0,Math.PI*2);
+  ctx.fillStyle='#22c55e';ctx.fill();
+  ctx.fillStyle='#22c55e';ctx.font='bold 10px IBM Plex Mono';
+  ctx.fillText('Optimal',toX(optimal.sigma)+10,toY(optimal.mu)+4);
+
+  // Arrow from current to optimal
+  ctx.beginPath();
+  ctx.setLineDash([4,4]);
+  ctx.moveTo(toX(current.sigma),toY(current.mu));
+  ctx.lineTo(toX(optimal.sigma),toY(optimal.mu));
+  ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=1;ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function renderComparison(current,optimal){
+  const metrics=[
+    {name:'Expected Return (1M)',cur:current.mu,opt:optimal.mu,fmt:v=>(v*100).toFixed(2)+'%',higher:true},
+    {name:'Volatility (σ)',cur:current.sigma,opt:optimal.sigma,fmt:v=>(v*100).toFixed(2)+'%',higher:false},
+    {name:'Sharpe Ratio',cur:current.sharpe,opt:optimal.sharpe,fmt:v=>v.toFixed(3),higher:true},
+    {name:'VaR 95% (1M)',cur:current.var95,opt:optimal.var95,fmt:v=>(v*100).toFixed(2)+'%',higher:false},
+    {name:'Max Loss ($100K)',cur:current.var95*100000,opt:optimal.var95*100000,fmt:v=>'$'+Math.round(v).toLocaleString(),higher:false},
+  ];
+  let h='<table class="compare-table"><thead><tr><th>Metric</th><th>Current</th><th>Optimized</th><th>Change</th></tr></thead><tbody>';
+  metrics.forEach(m=>{
+    const diff=m.opt-m.cur;
+    const better=m.higher?diff>0:diff<0;
+    const cls=better?'better':'worse';
+    const arrow=better?'↑':'↓';
+    h+=`<tr><td style="font-weight:500">${m.name}</td><td>${m.fmt(m.cur)}</td><td class="${cls}" style="font-weight:600">${m.fmt(m.opt)}</td><td class="${cls}">${arrow} ${m.fmt(Math.abs(diff))}</td></tr>`;
+  });
+  document.getElementById('compare-container').innerHTML=h+'</tbody></table>';
+}
+
+function renderAllocation(tickers,weights){
+  const canvas=document.getElementById('alloc-chart'),ctx=canvas.getContext('2d');
+  const W=canvas.parentElement.clientWidth,H=280;
+  canvas.width=W*2;canvas.height=H*2;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(2,2);ctx.clearRect(0,0,W,H);
+
+  const items=tickers.map((t,i)=>({ticker:t,weight:weights[i],sector:STOCK_DATA[t].sector})).sort((a,b)=>b.weight-a.weight);
+  const colors={Tech:'#3b82f6',Finance:'#22c55e',Healthcare:'#a855f7',Consumer:'#f59e0b',Energy:'#ef4444',Index:'#06b6d4',Bond:'#64748b',Commodity:'#eab308',Crypto:'#f97316'};
+  const mL=55,mR=60,mT=10,mB=10,pH=H-mT-mB;
+  const barH=Math.min(pH/items.length-4,24);
+
+  items.forEach((item,i)=>{
+    const y=mT+i*(barH+4);
+    const w=(item.weight)*(W-mL-mR);
+    ctx.fillStyle=colors[item.sector]||'#71717a';
+    ctx.globalAlpha=0.7;ctx.fillRect(mL,y,w,barH);ctx.globalAlpha=1;
+    ctx.fillStyle='#e4e4e7';ctx.font='10px IBM Plex Mono';ctx.textAlign='right';
+    ctx.fillText(item.ticker,mL-6,y+barH/2+3);
+    ctx.fillStyle='#71717a';ctx.font='9px IBM Plex Mono';ctx.textAlign='left';
+    ctx.fillText(`${(item.weight*100).toFixed(1)}%`,mL+w+6,y+barH/2+3);
+  });
+}
+
+function renderReallocation(tickers,currentW,optimalW){
+  let h='<table class="realloc-table"><thead><tr><th>Asset</th><th>Sector</th><th>Current</th><th>Optimal</th><th>Change</th></tr></thead><tbody>';
+  const changes=tickers.map((t,i)=>({ticker:t,sector:STOCK_DATA[t].sector,cur:currentW[i],opt:optimalW[i],diff:optimalW[i]-currentW[i]})).sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff));
+
+  changes.forEach(c=>{
+    const col=c.diff>0.005?'var(--green)':c.diff<-0.005?'var(--red)':'var(--text-muted)';
+    const arrow=c.diff>0.005?'↑':c.diff<-0.005?'↓':'—';
+    const bw=Math.min(Math.abs(c.diff)*500,80);
+    const bc=c.diff>0?'var(--green)':'var(--red)';
+    h+=`<tr><td style="font-weight:500">${c.ticker}</td><td style="color:var(--text-muted)">${c.sector}</td>
+      <td>${(c.cur*100).toFixed(1)}%</td><td style="font-weight:600">${(c.opt*100).toFixed(1)}%</td>
+      <td style="color:${col}">${arrow} ${(Math.abs(c.diff)*100).toFixed(1)}%<span class="change-bar" style="width:${bw}px;background:${bc}"></span></td></tr>`;
+  });
+  document.getElementById('realloc-container').innerHTML=h+'</tbody></table>';
+}
+
+function generateAI(tickers,currentW,optimalW,currentStats,optimalStats,objective){
+  const objName={max_sharpe:'Maximum Sharpe Ratio',min_var:'Minimum Variance',max_return:'Maximum Return',risk_parity:'Risk Parity'}[objective];
+  
+  // Sector analysis
+  const curSec={},optSec={};
+  tickers.forEach((t,i)=>{
+    const s=STOCK_DATA[t].sector;
+    curSec[s]=(curSec[s]||0)+currentW[i];
+    optSec[s]=(optSec[s]||0)+optimalW[i];
+  });
+  
+  const biggestIncrease=tickers.map((t,i)=>({ticker:t,diff:optimalW[i]-currentW[i]})).sort((a,b)=>b.diff-a.diff)[0];
+  const biggestDecrease=tickers.map((t,i)=>({ticker:t,diff:optimalW[i]-currentW[i]})).sort((a,b)=>a.diff-b.diff)[0];
+
+  const sharpeImprove=((optimalStats.sharpe-currentStats.sharpe)/Math.abs(currentStats.sharpe)*100).toFixed(0);
+  const varReduce=((currentStats.var95-optimalStats.var95)/currentStats.var95*100).toFixed(0);
+
+  let t=`<p><strong>Optimization Results — ${objName}</strong></p>`;
+  t+=`<p>The optimizer analyzed ${document.getElementById('sims-select').value} random portfolios within your constraints and found an allocation that `;
+  if(optimalStats.sharpe>currentStats.sharpe)t+=`improves the Sharpe ratio by <span class="hl-green">${sharpeImprove}%</span>`;
+  if(optimalStats.var95<currentStats.var95)t+=` and reduces VaR by <span class="hl-green">${varReduce}%</span>`;
+  t+=`.</p>`;
+
+  t+=`<p><strong>Key Changes:</strong> The biggest increase is <span class="hl-green">${biggestIncrease.ticker} (+${(biggestIncrease.diff*100).toFixed(1)}%)</span>, and the biggest decrease is <span class="hl-red">${biggestDecrease.ticker} (${(biggestDecrease.diff*100).toFixed(1)}%)</span>.</p>`;
+
+  // Sector shifts
+  const secShifts=Object.keys({...curSec,...optSec}).map(s=>({sector:s,diff:(optSec[s]||0)-(curSec[s]||0)})).filter(s=>Math.abs(s.diff)>0.02).sort((a,b)=>b.diff-a.diff);
+  if(secShifts.length>0){
+    t+=`<p><strong>Sector Rebalancing:</strong> `;
+    t+=secShifts.map(s=>`${s.sector} ${s.diff>0?'<span class="hl-green">+':'<span class="hl-red">'}${(s.diff*100).toFixed(1)}%</span>`).join(', ');
+    t+=`</p>`;
+  }
+
+  t+=`<p><strong>Risk-Return Tradeoff:</strong> `;
+  if(optimalStats.sigma<currentStats.sigma&&optimalStats.mu>=currentStats.mu)t+=`The optimized portfolio achieves <span class="hl-green">lower risk with equal or higher returns</span> — a strictly dominant allocation.`;
+  else if(optimalStats.sharpe>currentStats.sharpe)t+=`The optimized portfolio offers a <span class="hl-green">better risk-adjusted return</span>, with the Sharpe ratio improving from ${currentStats.sharpe.toFixed(3)} to ${optimalStats.sharpe.toFixed(3)}.`;
+  else t+=`The optimization maintained returns while reducing portfolio variance.`;
+  t+=`</p>`;
+
+  document.getElementById('ai-text').innerHTML=t;
+}
+
+// Init
+loadPreset('tech');
+updateSliders();
+</script>
+</body>
+</html>
